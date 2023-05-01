@@ -72,6 +72,15 @@ export default class {
     this.document = document
     this.onNavigate = onNavigate
     this.store = store
+
+    //Added distinct status for each ticket group to allow switching between groups without losing the state
+    //Previously, the state was shared between all groups, making the user losing one click when switching between groups
+    this.ticketGroupsState = {
+      1: { isOpen: false },
+      2: { isOpen: false },
+      3: { isOpen: false },
+    }
+
     $('#arrow-icon1').click((e) => this.handleShowTickets(e, bills, 1))
     $('#arrow-icon2').click((e) => this.handleShowTickets(e, bills, 2))
     $('#arrow-icon3').click((e) => this.handleShowTickets(e, bills, 3))
@@ -131,27 +140,35 @@ export default class {
   }
 
   handleShowTickets(e, bills, index) {
-    if (this.counter === undefined || this.index !== index) this.counter = 0
-    if (this.index === undefined || this.index !== index) this.index = index
-    if (this.counter % 2 === 0) {
-      $(`#arrow-icon${this.index}`).css({ transform: 'rotate(0deg)'})
-      $(`#status-bills-container${this.index}`)
-        .html(cards(filteredBills(bills, getStatus(this.index))))
-      this.counter ++
+    // Get the current state of the ticket group
+    // If it's closed, open it and display the bills
+    // If it's open, close it and hide the bills
+
+    //Added distinct status for each ticket group to allow switching between groups without losing the state
+
+    // Previously, the state was shared between all groups, making the user losing one click when switching between groups
+    const ticketGroupState = this.ticketGroupsState[index];
+  
+    ticketGroupState.isOpen = !ticketGroupState.isOpen;//toggle the state of the ticket group
+  
+    if (ticketGroupState.isOpen) {
+      $(`#arrow-icon${index}`).css({ transform: 'rotate(0deg)' });
+      $(`#status-bills-container${index}`).html(cards(filteredBills(bills, getStatus(index))));
     } else {
-      $(`#arrow-icon${this.index}`).css({ transform: 'rotate(90deg)'})
-      $(`#status-bills-container${this.index}`)
-        .html("")
-      this.counter ++
+      $(`#arrow-icon${index}`).css({ transform: 'rotate(90deg)' });
+      $(`#status-bills-container${index}`).html('');
     }
-
-    bills.forEach(bill => {
-      $(`#open-bill${bill.id}`).click((e) => this.handleEditTicket(e, bill, bills))
-    })
-
-    return bills
-
+  
+    // Filter bills to only select those that belong to the currently opened category
+    // Else, opening and closing a category would prevent interaction with the bills of other categories
+    const billsInCurrentCategory = filteredBills(bills, getStatus(index));
+    billsInCurrentCategory.forEach(bill => {
+      $(`#open-bill${bill.id}`).click((e) => this.handleEditTicket(e, bill, bills, index));
+    });
+  
+    return bills;
   }
+  
 
   getBillsAllUsers = () => {
     if (this.store) {
