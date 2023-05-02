@@ -146,7 +146,7 @@ export default class {
 
     //Added distinct status for each ticket group to allow switching between groups without losing the state
 
-    // Previously, the state was shared between all groups, making the user losing one click when switching between groups
+    // Previously, the state was shared between all groups, making the user lose one click when switching between groups
     const ticketGroupState = this.ticketGroupsState[index];
   
     ticketGroupState.isOpen = !ticketGroupState.isOpen;//toggle the state of the ticket group
@@ -158,8 +158,8 @@ export default class {
       $(`#arrow-icon${index}`).css({ transform: 'rotate(90deg)' });
       $(`#status-bills-container${index}`).html('');
     }
-  
-    // Filter bills to only select those that belong to the currently opened category
+
+    // Filter bills to only select those that belong to the currently opened category when adding event listeners
     // Else, opening and closing a category would prevent interaction with the bills of other categories
     const billsInCurrentCategory = filteredBills(bills, getStatus(index));
     billsInCurrentCategory.forEach(bill => {
