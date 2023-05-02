@@ -2,12 +2,15 @@
  * @jest-environment jsdom
  */
 
-import {screen, waitFor} from "@testing-library/dom"
-import BillsUI from "../views/BillsUI.js"
-import { bills } from "../fixtures/bills.js"
-import { ROUTES_PATH} from "../constants/routes.js";
-import {localStorageMock} from "../__mocks__/localStorage.js";
-
+import { fireEvent, screen, waitFor } from "@testing-library/dom";
+import BillsUI from "../views/BillsUI.js";
+import { bills } from "../fixtures/bills.js";
+import mockBills from "../__mocks__/store.js";
+import NewBillUI from "../views/NewBillUI.js";
+import Bills from "../containers/Bills.js";
+import NewBill from "../containers/NewBill.js";
+import { ROUTES_PATH } from "../constants/routes.js";
+import { localStorageMock } from "../__mocks__/localStorage.js";
 import router from "../app/Router.js";
 
 describe("Given I am connected as an employee", () => {
@@ -26,7 +29,7 @@ describe("Given I am connected as an employee", () => {
       await waitFor(() => screen.getByTestId('icon-window'))
       const windowIcon = screen.getByTestId('icon-window')
       //Expect expression to check if the window icon is highlighted
-      expect(windowIcon.classList.contains('active-icon')).toBeTrue()
+      expect(windowIcon.classList.contains('active-icon')).toBeTruthy()
 
     })
     test("Then bills should be ordered from earliest to latest", () => {
@@ -37,5 +40,20 @@ describe("Given I am connected as an employee", () => {
       const datesSorted = [...dates].sort(antiChrono)
       expect(dates).toEqual(datesSorted)
     })
+    //Verify that user can navigate to new bill page when clicking on corresponding button
+    test("When I click on new bill button, then I should be redirected to new bill page", () => {
+      document.body.innerHTML = BillsUI({ data: bills })
+    
+      const onNavigate = jest.fn();
+      new Bills({ document, onNavigate, store: mockBills, localStorage: localStorageMock })
+    
+      const newBillButton = screen.getByTestId('btn-new-bill');
+      fireEvent.click(newBillButton);
+    
+      // Expect the onNavigate function to have been called with the NewBill route
+      expect(onNavigate).toHaveBeenCalledWith(ROUTES_PATH['NewBill']);
+    })
+    
+      
   })
 })
