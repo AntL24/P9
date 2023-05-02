@@ -16,7 +16,6 @@ import router from "../app/Router.js";
 describe("Given I am connected as an employee", () => {
   describe("When I am on Bills Page", () => {
     test("Then bill icon in vertical layout should be highlighted", async () => {
-
       Object.defineProperty(window, 'localStorage', { value: localStorageMock })
       window.localStorage.setItem('user', JSON.stringify({
         type: 'Employee'
@@ -32,6 +31,7 @@ describe("Given I am connected as an employee", () => {
       expect(windowIcon.classList.contains('active-icon')).toBeTruthy()
 
     })
+    
     test("Then bills should be ordered from earliest to latest", () => {
       //Use same method as in container/ Bills.js to get bills and sort them so as to make sure they are ordered from earliest to latest
       document.body.innerHTML = BillsUI({ data: bills.sort((a, b) => new Date(b.date) - new Date(a.date)) })
@@ -40,8 +40,9 @@ describe("Given I am connected as an employee", () => {
       const datesSorted = [...dates].sort(antiChrono)
       expect(dates).toEqual(datesSorted)
     })
+
     //Verify that user can navigate to new bill page when clicking on corresponding button
-    test("When I click on new bill button, then I should be redirected to new bill page", () => {
+    test("When I click on new bill button, I should be redirected to new bill page", () => {
       document.body.innerHTML = BillsUI({ data: bills })
     
       const onNavigate = jest.fn();
@@ -50,9 +51,32 @@ describe("Given I am connected as an employee", () => {
       const newBillButton = screen.getByTestId('btn-new-bill');
       fireEvent.click(newBillButton);
     
-      // Expect the onNavigate function to have been called with the NewBill route
+      // Check if onNavigate function was called with route: NewBill
       expect(onNavigate).toHaveBeenCalledWith(ROUTES_PATH['NewBill']);
     })
+      describe("When I click on the eye icon", () => {
+        test("Then a modal should display the bill image", () => {
+          const html = BillsUI({ data: bills });
+          document.body.innerHTML = html;
+          const onNavigate = (pathname) => {
+            document.body.innerHTML = ROUTES_PATH[pathname];
+          };
+          const bill = new Bills({ document, onNavigate, store: mockBills, localStorage: window.localStorage });
+        
+          const mockIcon = document.createElement("div");
+          const fakeImageUrl = "https://fake-image-url.com/image.png";
+          mockIcon.setAttribute("data-bill-url", fakeImageUrl);
+        
+          // Mock the jQuery modal method to avoid error when calling the test
+          $.fn.modal = jest.fn();
+        
+          bill.handleClickIconEye(mockIcon);
+        
+          expect(screen.getByAltText("Bill").src).toBe(fakeImageUrl);
+          expect($.fn.modal).toHaveBeenCalledWith('show');
+        });
+        
+      });
     
       
   })
