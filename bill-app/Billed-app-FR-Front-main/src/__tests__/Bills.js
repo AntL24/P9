@@ -47,6 +47,7 @@ describe("Given I am connected as an employee", () => {
   });
 
   describe("When I am on Bills Page", () => {
+    //Expect expression to check if the window icon really is highlighted
     test("Then bill icon in vertical layout should be highlighted", async () => {
       window.onNavigate(ROUTES_PATH.Bills);
       await waitFor(() => screen.getByTestId("icon-window"));

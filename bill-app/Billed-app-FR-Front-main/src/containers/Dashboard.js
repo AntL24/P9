@@ -141,6 +141,7 @@ export default class {
 
   handleShowTickets(e, bills, index) {
     // Get the current state of the ticket group
+    
     // If it's closed, open it and display the bills
     // If it's open, close it and hide the bills
 
