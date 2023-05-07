@@ -5,24 +5,10 @@
 import NewBillUI from "../views/NewBillUI.js";
 import NewBill from "../containers/NewBill.js";
 import { ROUTES_PATH } from "../constants/routes.js";
-import router from "../app/Router.js";
-
 import { fireEvent, waitFor, screen } from "@testing-library/dom";
-import userEvent from "@testing-library/user-event";
-
 import mockedStore from "../__mocks__/store.js";
 import { localStorageMock } from "../__mocks__/localStorage.js";
-
-import BillsUI from "../views/BillsUI.js";
-
-
-
-
-
 import "@testing-library/jest-dom/extend-expect";
-
-import firestore from "../__mocks__/store.js";
-
 
 describe("Given I am connected as an employee", () => {
   //////////////////////////////////////////////
@@ -47,7 +33,7 @@ describe("Given I am connected as an employee", () => {
     });
 
 
-    //Is form rendered ? (i added the expect)
+    //Form render check (i added the expect)
     test("Then the form should render correctly", () => {
       const html = NewBillUI()
       document.body.innerHTML = html
@@ -152,130 +138,166 @@ describe("Given I am connected as an employee", () => {
       consoleErrorSpy.mockRestore();
     });
 
-    //////////////////////////////////////////////////////////// 
-    ////Form values should be sent as expected when submitting
-    test("Then the form should submit with correct values", () => {
-      const html = NewBillUI();
-      document.body.innerHTML = html;
-      const onNavigate = (pathname) => {
-        document.body.innerHTML = ROUTES_PATH[pathname];
-      };
-      const newBill = new NewBill({
-        document,
-        onNavigate,
-        store: mockedStore,
-        localStorage: localStorageMock,
+    ////////////////////////////////////////////////////////
+    //Post new bill integration test
+    describe("Given I am a user connected as Employee, and a user post a newBill", () => {
+      test("Add a bill from mock API POST", async () => {
+        const postSpy = jest.spyOn(mockedStore, "bills");
+        const bill = {
+          id: "47qAXb6fIm2zOKkLzMro",
+          vat: "80",
+          fileUrl: "https://firebasestorage.googleapis.com/v0/b/billable-677b6.a…f-1.jpg?alt=media&token=c1640e12-a24b-4b11-ae52-529112e9602a",
+          status: "pending",
+          type: "Hôtel et logement",
+          commentary: "séminaire billed",
+          name: "encore",
+          fileName: "preview-facture-free-201801-pdf-1.jpg",
+          date: "2004-04-04",
+          amount: 400,
+          commentAdmin: "ok",
+          email: "a@a",
+          pct: 20,
+        };
+        const postBill = await mockedStore.bills().update(bill);
+        expect(postSpy).toHaveBeenCalledTimes(1);
+        expect(postBill).toStrictEqual(bill);
       });
 
-      const form = screen.getByTestId("form-new-bill");
-      const dateInput = screen.getByTestId("datepicker");
-      const typeInput = screen.getByTestId("expense-type");
-      const nameInput = screen.getByTestId("expense-name");
-      const amountInput = screen.getByTestId("amount");
-      const vatInput = screen.getByTestId("vat");
-      const pctInput = screen.getByTestId("pct");
-      const commentaryInput = screen.getByTestId("commentary");
+      ////////////////////////////////////////////////////////
+      //API error test
+      describe("When an error occurs on API", () => {
+        let onNavigate;
+        beforeEach(() => {
+          window.localStorage.setItem(
+            "user",
+            JSON.stringify({
+              type: "Employee",
+            })
+          );
 
-      fireEvent.input(dateInput, { target: { value: "2013-01-02" } });
-      userEvent.selectOptions(typeInput, "Restaurants et bars");
-      fireEvent.input(nameInput, { target: { value: "Le bistro du coin" } });
-      fireEvent.input(amountInput, { target: { value: 150 } });
-      fireEvent.input(vatInput, { target: { value: "20" } });
-      fireEvent.input(pctInput, { target: { value: 10 } });
-      fireEvent.input(commentaryInput, {
-        target: { value: "Repas d'affaire" },
+          document.body.innerHTML = NewBillUI();
+          onNavigate = (pathname) => {
+            document.body.innerHTML = ROUTES_PATH[pathname];
+          };
+        });
+
+
+        //////////////////////////////////////////////////////////// 
+        ////Test if 404 error is caught and logged
+        test("Then a 404 error should be caught and logged", async () => {
+          const html = NewBillUI();
+          document.body.innerHTML = html;
+          const onNavigate = (pathname) => {
+            document.body.innerHTML = ROUTES_PATH[pathname];
+          };
+          const newBill = new NewBill({
+            document,
+            onNavigate,
+            store: mockedStore,
+            localStorage: localStorageMock,
+          });
+
+          const form = screen.getByTestId("form-new-bill");
+
+          // Force store.bills().update to return a 404 error
+          const updateSpy = jest.spyOn(newBill.store, "bills").mockImplementation(() => ({
+            update: () => Promise.reject({ message: "404 error", status: 404 }),
+          }));
+
+          // Spy on console.error
+          const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => { });
+
+          // Submit the form
+          fireEvent.submit(form);
+
+          // Wait for the error to be caught
+          await waitFor(() => expect(consoleErrorSpy).toHaveBeenCalled());
+
+          // Check if error is logged
+          expect(consoleErrorSpy).toHaveBeenCalledWith({ message: "404 error", status: 404 });
+
+          // Restore spies
+          updateSpy.mockRestore();
+          consoleErrorSpy.mockRestore();
+        });
+
+        //////////////////////////////////////////////////////////// 
+        ////Test if 500 error is caught and logged
+        test("Then a 500 error should be caught and logged", async () => {
+          const html = NewBillUI();
+          document.body.innerHTML = html;
+          const onNavigate = (pathname) => {
+            document.body.innerHTML = ROUTES_PATH[pathname];
+          };
+          const newBill = new NewBill({
+            document,
+            onNavigate,
+            store: mockedStore,
+            localStorage: localStorageMock,
+          });
+
+          const form = screen.getByTestId("form-new-bill");
+
+          const updateSpy = jest.spyOn(newBill.store, "bills").mockImplementation(() => ({
+            update: () => Promise.reject({ message: "500 error", status: 500 }),
+          }));
+
+          const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => { });
+
+          fireEvent.submit(form);
+
+          await waitFor(() => expect(consoleErrorSpy).toHaveBeenCalled());
+
+          expect(consoleErrorSpy).toHaveBeenCalledWith({ message: "500 error", status: 500 });
+
+          updateSpy.mockRestore();
+          consoleErrorSpy.mockRestore();
+        });
       });
+      
+      ////////////////////////////////////////////////////////
+      // Successful submission test: redirect to bills page
+      describe("When the submission is successful", () => {
+        let onNavigate;
+        beforeEach(() => {
+          window.localStorage.setItem(
+            "user",
+            JSON.stringify({
+              type: "Employee",
+            })
+          );
 
-      // Mock the updateBill function to prevent navigating away from the page
-      newBill.updateBill = jest.fn();
-
-      fireEvent.submit(form);
-      expect(newBill.updateBill).toHaveBeenCalledWith({
-        email: JSON.parse(localStorageMock.getItem("user")).email,
-        type: "Restaurants et bars",
-        name: "Le bistro du coin",
-        amount: 150,
-        date: "2013-01-02",
-        vat: "20",
-        pct: 10,
-        commentary: "Repas d'affaire",
-        fileUrl: null,
-        fileName: null,
-        status: "pending",
+          document.body.innerHTML = NewBillUI();
+          onNavigate = (pathname) => {
+            document.body.innerHTML = ROUTES_PATH[pathname];
+          };
+        });
+        test("Then updateBill should navigate to Bills page", async () => {
+          const html = NewBillUI();
+          document.body.innerHTML = html;
+          const onNavigate = jest.fn((pathname) => {
+            document.body.innerHTML = ROUTES_PATH[pathname];
+          });
+          const newBill = new NewBill({
+            document,
+            onNavigate,
+            store: mockedStore,
+            localStorage: localStorageMock,
+          });
+  
+          const form = screen.getByTestId("form-new-bill");
+  
+          const updateSpy = jest.spyOn(newBill.store, "bills").mockImplementation(() => ({
+            update: () => Promise.resolve(),
+          }));
+  
+          fireEvent.submit(form);
+  
+          await waitFor(() => expect(onNavigate).toHaveBeenCalledWith(ROUTES_PATH['Bills']));
+  
+          updateSpy.mockRestore();
+        });
       });
     });
-
-    //////////////////////////////////////////////////////////// 
-    ////Test if 404 error is caught and logged
-    test("Then a 404 error should be caught and logged", async () => {
-      const html = NewBillUI();
-      document.body.innerHTML = html;
-      const onNavigate = (pathname) => {
-        document.body.innerHTML = ROUTES_PATH[pathname];
-      };
-      const newBill = new NewBill({
-        document,
-        onNavigate,
-        store: mockedStore,
-        localStorage: localStorageMock,
-      });
-
-      const form = screen.getByTestId("form-new-bill");
-
-      // Force store.bills().update to return a 404 error
-      const updateSpy = jest.spyOn(newBill.store, "bills").mockImplementation(() => ({
-        update: () => Promise.reject({ message: "404 error", status: 404 }),
-      }));
-
-      // Spy on console.error
-      const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => { });
-
-      // Submit the form
-      fireEvent.submit(form);
-
-      // Wait for the error to be caught
-      await waitFor(() => expect(consoleErrorSpy).toHaveBeenCalled());
-
-      // Check if error is logged
-      expect(consoleErrorSpy).toHaveBeenCalledWith({ message: "404 error", status: 404 });
-
-      // Restore spies
-      updateSpy.mockRestore();
-      consoleErrorSpy.mockRestore();
-    });
-
-    //////////////////////////////////////////////////////////// 
-    ////Test if 500 error is caught and logged
-    test("Then a 500 error should be caught and logged", async () => {
-      const html = NewBillUI();
-      document.body.innerHTML = html;
-      const onNavigate = (pathname) => {
-        document.body.innerHTML = ROUTES_PATH[pathname];
-      };
-      const newBill = new NewBill({
-        document,
-        onNavigate,
-        store: mockedStore,
-        localStorage: localStorageMock,
-      });
-
-      const form = screen.getByTestId("form-new-bill");
-
-      const updateSpy = jest.spyOn(newBill.store, "bills").mockImplementation(() => ({
-        update: () => Promise.reject({ message: "500 error", status: 500 }),
-      }));
-
-      const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => { });
-
-      fireEvent.submit(form);
-
-      await waitFor(() => expect(consoleErrorSpy).toHaveBeenCalled());
-
-      expect(consoleErrorSpy).toHaveBeenCalledWith({ message: "500 error", status: 500 });
-
-      updateSpy.mockRestore();
-      consoleErrorSpy.mockRestore();
-    });
-
   });
 });
