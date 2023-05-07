@@ -126,8 +126,4 @@ describe("Given I am connected as an employee", () => {
   });
 });
 
-//Test d'intégration for list method of mockedBills object in store.js)
-describe("Given I am a user connected as Employee", () => {
-  
-  
 
