@@ -10,9 +10,8 @@ import {
 import BillsUI from "../views/BillsUI.js";
 import { bills } from "../fixtures/bills.js";
 import mockBills from "../__mocks__/store.js";
-import NewBillUI from "../views/NewBillUI.js";
 import Bills from "../containers/Bills.js";
-import NewBill from "../containers/NewBill.js";
+import ErrorPage from "../views/ErrorPage.js";
 import { ROUTES_PATH } from "../constants/routes.js";
 import { localStorageMock } from "../__mocks__/localStorage.js";
 import router from "../app/Router.js";
@@ -124,7 +123,7 @@ describe("Given I am connected as an employee", () => {
       });
     });
 
-    // Ajouter un test pour GET bills
+    // GET bills test + in chronological order
     test("Then bills should be fetched from the store", async () => {
       const onNavigate = jest.fn();
       const billsInstance = new Bills({
@@ -138,13 +137,14 @@ describe("Given I am connected as an employee", () => {
       const billsData = await billsInstance.getBills()
       expect(storeListSpy).toHaveBeenCalledTimes(1)
       expect(billsData.length).toBe(4)
+      //Below tests are in chronological order: newest to oldest
       expect(billsData[0]).toHaveProperty('id', '47qAXb6fIm2zOKkLzMro')
       expect(billsData[1]).toHaveProperty('id', 'UIUZtnPQvnbFnB0ozvJh')
       expect(billsData[2]).toHaveProperty('id', 'qcCK3SzECmaZAGRrHjaC')
       expect(billsData[3]).toHaveProperty('id', 'BeKy5Mo4jkmdfPGYpTxZ')
     });
 
-    
+    //Bad data test for GET bills
     test("Given corrupted date data Then it should log the error and return unformatted date", async () => {
       const onNavigate = jest.fn();
       const corruptedBills = mockBills;
@@ -181,7 +181,62 @@ describe("Given I am connected as an employee", () => {
       expect(billsData[0]).toHaveProperty("date", "corrupted_date");
     });
     
-
+    //Integration test for GET bills
+    describe("Given I am connected as an employee", () => {
+      beforeEach(() => {
+        setup();
+      });
     
+      afterEach(() => {
+        tearDown();
+      });
+    
+      describe("When I navigate to Bills", () => {
+        beforeEach(() => {
+          jest.spyOn(mockBills, "bills");
+          Object.defineProperty(window, "localStorage", {
+            value: localStorageMock,
+          });
+          window.localStorage.setItem(
+            "user",
+            JSON.stringify({
+              type: "Employee",
+            })
+          );
+          const root = document.createElement("div");
+          root.setAttribute("id", "root");
+          document.body.append(root);
+          router();
+        });
+    
+        test("fetches bills from an API and fails with 404 message error", async () => {
+          mockBills.bills.mockImplementationOnce(() => {
+            return {
+              list: () => {
+                return Promise.reject(new Error("Erreur 404"));
+              },
+            };
+          });
+          const html = BillsUI({ error: "Erreur 404" });
+          document.body.innerHTML = html;
+          const message = await screen.getByText(/Erreur 404/);
+          expect(message).toBeTruthy();
+        });
+    
+        test("fetches messages from an API and fails with 500 message error", async () => {
+          mockBills.bills.mockImplementationOnce(() => {
+            return {
+              list: () => {
+                return Promise.reject(new Error("Erreur 500"));
+              },
+            };
+          });
+          const html = BillsUI({ error: "Erreur 500" });
+          document.body.innerHTML = html;
+          const message = await screen.getByText(/Erreur 500/);
+          expect(message).toBeTruthy();
+        });
+      });
+    });
   });
 });
