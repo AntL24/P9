@@ -166,20 +166,6 @@ describe("Given I am connected as an employee", () => {
       ////////////////////////////////////////////////////////
       //API error test
       describe("When an error occurs on API", () => {
-        let onNavigate;
-        beforeEach(() => {
-          window.localStorage.setItem(
-            "user",
-            JSON.stringify({
-              type: "Employee",
-            })
-          );
-
-          document.body.innerHTML = NewBillUI();
-          onNavigate = (pathname) => {
-            document.body.innerHTML = ROUTES_PATH[pathname];
-          };
-        });
 
 
         //////////////////////////////////////////////////////////// 
@@ -254,12 +240,11 @@ describe("Given I am connected as an employee", () => {
           consoleErrorSpy.mockRestore();
         });
       });
-      
+
       ////////////////////////////////////////////////////////
       // Successful submission test: redirect to bills page
       describe("When the submission is successful", () => {
-        let onNavigate;
-        beforeEach(() => {
+        test("Then updateBill should navigate to Bills page", async () => {
           window.localStorage.setItem(
             "user",
             JSON.stringify({
@@ -268,13 +253,6 @@ describe("Given I am connected as an employee", () => {
           );
 
           document.body.innerHTML = NewBillUI();
-          onNavigate = (pathname) => {
-            document.body.innerHTML = ROUTES_PATH[pathname];
-          };
-        });
-        test("Then updateBill should navigate to Bills page", async () => {
-          const html = NewBillUI();
-          document.body.innerHTML = html;
           const onNavigate = jest.fn((pathname) => {
             document.body.innerHTML = ROUTES_PATH[pathname];
           });
@@ -284,17 +262,17 @@ describe("Given I am connected as an employee", () => {
             store: mockedStore,
             localStorage: localStorageMock,
           });
-  
+
           const form = screen.getByTestId("form-new-bill");
-  
+
           const updateSpy = jest.spyOn(newBill.store, "bills").mockImplementation(() => ({
             update: () => Promise.resolve(),
           }));
-  
+
           fireEvent.submit(form);
-  
+
           await waitFor(() => expect(onNavigate).toHaveBeenCalledWith(ROUTES_PATH['Bills']));
-  
+
           updateSpy.mockRestore();
         });
       });
