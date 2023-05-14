@@ -14,7 +14,9 @@ describe("Given I am connected as an employee", () => {
   //////////////////////////////////////////////
   //Set up for all tests
   describe("When I am on NewBill Page", () => {
-    // Set email to local storage before each test
+    let html;
+    let newBill;
+  
     beforeEach(() => {
       Object.defineProperty(window, "localStorage", {
         value: localStorageMock,
@@ -22,12 +24,23 @@ describe("Given I am connected as an employee", () => {
       window.localStorage.setItem(
         "user",
         JSON.stringify({
-          type: "Employé",
+          type: "Employee",
           email: "employé@emailBill.com",
         })
       );
+      html = NewBillUI();
+      document.body.innerHTML = html;
+      const onNavigate = (pathname) => {
+        document.body.innerHTML = ROUTES_PATH[pathname];
+      };
+      newBill = new NewBill({
+        document,
+        onNavigate,
+        store: mockedStore,
+        localStorage: localStorageMock,
+      });
     });
-    //Reset after each test
+  
     afterEach(() => {
       window.localStorage.clear();
     });
@@ -35,8 +48,6 @@ describe("Given I am connected as an employee", () => {
 
     //Form render check (i added the expect)
     test("Then the form should render correctly", () => {
-      const html = NewBillUI()
-      document.body.innerHTML = html
       const form = screen.getByTestId("form-new-bill");
       expect(form).toBeTruthy();
     });
@@ -44,18 +55,6 @@ describe("Given I am connected as an employee", () => {
     //////////////////////////////////////////////////////////// 
     ////Use txt file to check if non-image files really can't be uploaded
     test("Then the file input should not accept non-image files", () => {
-      const html = NewBillUI();
-      document.body.innerHTML = html;
-      const onNavigate = (pathname) => {
-        document.body.innerHTML = ROUTES_PATH[pathname];
-      };
-      const newBill = new NewBill({
-        document,
-        onNavigate,
-        store: mockedStore,
-        localStorage: localStorageMock,
-      });
-
       const fileInput = screen.getByTestId("file");
       const file = new File(["text file content"], "test.txt", {
         type: "text/plain",
@@ -71,18 +70,6 @@ describe("Given I am connected as an employee", () => {
     //////////////////////////////////////////////////////////// 
     ////Check img file name
     test("Then the image files should be uploaded correctly", () => {
-      const html = NewBillUI();
-      document.body.innerHTML = html;
-      const onNavigate = (pathname) => {
-        document.body.innerHTML = ROUTES_PATH[pathname];
-      };
-      const newBill = new NewBill({
-        document,
-        onNavigate,
-        store: mockedStore,
-        localStorage: localStorageMock,
-      });
-
       const fileInput = screen.getByTestId("file");
       const file = new File(["image file content"], "test.png", {
         type: "image/png",
@@ -98,18 +85,6 @@ describe("Given I am connected as an employee", () => {
     //////////////////////////////////////////////////////////// 
     ////Error should be caught and logged if file upload fails
     test("Then an error should be caught and logged if file upload fails", async () => {
-      const html = NewBillUI();
-      document.body.innerHTML = html;
-      const onNavigate = (pathname) => {
-        document.body.innerHTML = ROUTES_PATH[pathname];
-      };
-      const newBill = new NewBill({
-        document,
-        onNavigate,
-        store: mockedStore,
-        localStorage: localStorageMock,
-      });
-
       const fileInput = screen.getByTestId("file");
       const file = new File(["image content"], "image.png", {
         type: "image/png",
@@ -166,23 +141,10 @@ describe("Given I am connected as an employee", () => {
       ////////////////////////////////////////////////////////
       //API error test
       describe("When an error occurs on API", () => {
-
-
+        
         //////////////////////////////////////////////////////////// 
         ////Test if 404 error is caught and logged
         test("Then a 404 error should be caught and logged", async () => {
-          const html = NewBillUI();
-          document.body.innerHTML = html;
-          const onNavigate = (pathname) => {
-            document.body.innerHTML = ROUTES_PATH[pathname];
-          };
-          const newBill = new NewBill({
-            document,
-            onNavigate,
-            store: mockedStore,
-            localStorage: localStorageMock,
-          });
-
           const form = screen.getByTestId("form-new-bill");
 
           // Force store.bills().update to return a 404 error
@@ -210,17 +172,6 @@ describe("Given I am connected as an employee", () => {
         //////////////////////////////////////////////////////////// 
         ////Test if 500 error is caught and logged
         test("Then a 500 error should be caught and logged", async () => {
-          const html = NewBillUI();
-          document.body.innerHTML = html;
-          const onNavigate = (pathname) => {
-            document.body.innerHTML = ROUTES_PATH[pathname];
-          };
-          const newBill = new NewBill({
-            document,
-            onNavigate,
-            store: mockedStore,
-            localStorage: localStorageMock,
-          });
 
           const form = screen.getByTestId("form-new-bill");
 
@@ -245,14 +196,7 @@ describe("Given I am connected as an employee", () => {
       // Successful submission test: redirect to bills page
       describe("When the submission is successful", () => {
         test("Then updateBill should navigate to Bills page", async () => {
-          window.localStorage.setItem(
-            "user",
-            JSON.stringify({
-              type: "Employee",
-            })
-          );
-
-          document.body.innerHTML = NewBillUI();
+          //Spy to check if the function is called
           const onNavigate = jest.fn((pathname) => {
             document.body.innerHTML = ROUTES_PATH[pathname];
           });
