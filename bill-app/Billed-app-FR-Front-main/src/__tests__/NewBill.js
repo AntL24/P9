@@ -16,7 +16,7 @@ describe("Given I am connected as an employee", () => {
   describe("When I am on NewBill Page", () => {
     let html;
     let newBill;
-  
+
     beforeEach(() => {
       Object.defineProperty(window, "localStorage", {
         value: localStorageMock,
@@ -40,7 +40,7 @@ describe("Given I am connected as an employee", () => {
         localStorage: localStorageMock,
       });
     });
-  
+
     afterEach(() => {
       window.localStorage.clear();
     });
@@ -95,9 +95,9 @@ describe("Given I am connected as an employee", () => {
         create: () => Promise.reject(new Error("File upload failed")),
       }));
 
-      //Spy on console.error
       const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => { });
 
+      //Upload the file with fireEvent.change. create() will fail and we'll catch the error 
       fireEvent.change(fileInput, {
         target: { files: [file] },
       });
@@ -115,8 +115,8 @@ describe("Given I am connected as an employee", () => {
 
     ////////////////////////////////////////////////////////
     //Post new bill integration test
-    describe("Given I am a user connected as Employee, and a user post a newBill", () => {
-      test("Add a bill from mock API POST", async () => {
+    describe("Given I am a user connected as Employee, and I post a newBill", () => {
+      test("Add a bill using mock API POST", async () => {
         const postSpy = jest.spyOn(mockedStore, "bills");
         const bill = {
           id: "47qAXb6fIm2zOKkLzMro",
@@ -138,11 +138,10 @@ describe("Given I am connected as an employee", () => {
         expect(postBill).toStrictEqual(bill);
       });
 
-      ////////////////////////////////////////////////////////
+      //////////////////
       //API error test
       describe("When an error occurs on API", () => {
-        
-        //////////////////////////////////////////////////////////// 
+        ///////////////////////////////////////////
         ////Test if 404 error is caught and logged
         test("Then a 404 error should be caught and logged", async () => {
           const form = screen.getByTestId("form-new-bill");
@@ -158,18 +157,18 @@ describe("Given I am connected as an employee", () => {
           // Submit the form
           fireEvent.submit(form);
 
-          // Wait for the error to be caught
+          // Wait for error to be caught
           await waitFor(() => expect(consoleErrorSpy).toHaveBeenCalled());
 
-          // Check if error is logged
+          // Error should be logged
           expect(consoleErrorSpy).toHaveBeenCalledWith({ message: "404 error", status: 404 });
 
-          // Restore spies
+          // Restore the spies. Else, the next test will also return 404 error, instead of 500.
           updateSpy.mockRestore();
           consoleErrorSpy.mockRestore();
         });
 
-        //////////////////////////////////////////////////////////// 
+        ///////////////////////////////////////////
         ////Test if 500 error is caught and logged
         test("Then a 500 error should be caught and logged", async () => {
 
@@ -192,11 +191,11 @@ describe("Given I am connected as an employee", () => {
         });
       });
 
-      ////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////
       // Successful submission test: redirect to bills page
       describe("When the submission is successful", () => {
         test("Then updateBill should navigate to Bills page", async () => {
-          //Spy to check if the function is called
+          //Spy to check if the function is called, and redeclare newBill with the spy
           const onNavigate = jest.fn((pathname) => {
             document.body.innerHTML = ROUTES_PATH[pathname];
           });
