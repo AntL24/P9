@@ -157,6 +157,7 @@ describe("Given I am connected as an employee", () => {
       test("Given corrupted date data Then it should log the error and return unformatted date", async () => {
         const onNavigate = jest.fn();
         const corruptedBills = mockBills;
+
         corruptedBills.list = () =>
           Promise.resolve([
             {
@@ -179,8 +180,6 @@ describe("Given I am connected as an employee", () => {
           localStorage: localStorageMock,
         });
 
-        console.log = jest.fn();
-
         const billsData = await billsInstance.getBills();
         expect(console.log).toHaveBeenCalledWith(
           new RangeError("Invalid time value"),
@@ -192,7 +191,6 @@ describe("Given I am connected as an employee", () => {
 
       /////////////////////////////////////////////////////////////////////
       //Integration test for GET bills
-      //We already are connected as an employee, so we can test the GET bills request
       describe("When I navigate to Bills", () => {
         beforeEach(() => {
           jest.spyOn(mockBills, "bills");
@@ -210,13 +208,16 @@ describe("Given I am connected as an employee", () => {
           document.body.append(root);
           router();
         });
+        /////////////////////////////////////////////////////////////////
+        //If bills are fetched correctly, bills page should be displayed
         test("fetches bills from mock API GET", async () => {
           const html = BillsUI({ data: bills });
           document.body.innerHTML = html;
           const message = await screen.getByText(/Mes notes de frais/i);
           expect(message).toBeTruthy();
         });
-        
+        //////////////////////////////////////////////////////////////////////
+        //When an error occurs, error message should instead be displayed
         describe("When an error occurs on API", () => {
           test("fetches bills from an API and fails with 404 message error", async () => {
             mockBills.bills.mockImplementationOnce(() => {
