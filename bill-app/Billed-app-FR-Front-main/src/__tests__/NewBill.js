@@ -3,7 +3,7 @@
  */
 
 import NewBillUI from "../views/NewBillUI.js";
-import NewBill from "../containers/NewBill.js";
+import NewBill from "../containers/NewBill.js"; 
 import { ROUTES_PATH } from "../constants/routes.js";
 import { fireEvent, waitFor, screen } from "@testing-library/dom";
 import mockedStore from "../__mocks__/store.js";
@@ -45,14 +45,14 @@ describe("Given I am connected as an employee", () => {
       window.localStorage.clear();
     });
 
-
+    /////////////////////////////////////////
     //Form render check (i added the expect)
     test("Then the form should render correctly", () => {
       const form = screen.getByTestId("form-new-bill");
       expect(form).toBeTruthy();
     });
 
-    //////////////////////////////////////////////////////////// 
+    //////////////////////////////////////////////////////////////////////
     ////Use txt file to check if non-image files really can't be uploaded
     test("Then the file input should not accept non-image files", () => {
       const fileInput = screen.getByTestId("file");
@@ -67,7 +67,7 @@ describe("Given I am connected as an employee", () => {
       expect(fileInput.value).toBe("");
     });
 
-    //////////////////////////////////////////////////////////// 
+    ////////////////////////
     ////Check img file name
     test("Then the image files should be uploaded correctly", () => {
       const fileInput = screen.getByTestId("file");
@@ -95,17 +95,12 @@ describe("Given I am connected as an employee", () => {
         create: () => Promise.reject(new Error("File upload failed")),
       }));
 
-      const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => { });
-
       //Upload the file with fireEvent.change. create() will fail and we'll catch the error 
+      const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => { });
       fireEvent.change(fileInput, {
         target: { files: [file] },
       });
-
-      //Wait for file upload to fail
       await waitFor(() => expect(consoleErrorSpy).toHaveBeenCalled());
-
-      //Check if error is logged
       expect(consoleErrorSpy).toHaveBeenCalledWith(new Error("File upload failed"));
 
       //Reinitialise spies
@@ -144,23 +139,16 @@ describe("Given I am connected as an employee", () => {
         ///////////////////////////////////////////
         ////Test if 404 error is caught and logged
         test("Then a 404 error should be caught and logged", async () => {
+          // Get form and force store.bills().update to return a 404 error
           const form = screen.getByTestId("form-new-bill");
-
-          // Force store.bills().update to return a 404 error
           const updateSpy = jest.spyOn(newBill.store, "bills").mockImplementation(() => ({
             update: () => Promise.reject({ message: "404 error", status: 404 }),
           }));
 
-          // Spy on console.error
+          // After form submission, error should be caught and logged
           const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => { });
-
-          // Submit the form
           fireEvent.submit(form);
-
-          // Wait for error to be caught
           await waitFor(() => expect(consoleErrorSpy).toHaveBeenCalled());
-
-          // Error should be logged
           expect(consoleErrorSpy).toHaveBeenCalledWith({ message: "404 error", status: 404 });
 
           // Restore the spies. Else, the next test will also return 404 error, instead of 500.
@@ -172,18 +160,16 @@ describe("Given I am connected as an employee", () => {
         ////Test if 500 error is caught and logged
         test("Then a 500 error should be caught and logged", async () => {
 
+          //Get form and mock store.bills().update to return a 500 error
           const form = screen.getByTestId("form-new-bill");
-
           const updateSpy = jest.spyOn(newBill.store, "bills").mockImplementation(() => ({
             update: () => Promise.reject({ message: "500 error", status: 500 }),
           }));
 
+          //Once form is submitted, error should be caught and logged
           const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => { });
-
           fireEvent.submit(form);
-
           await waitFor(() => expect(consoleErrorSpy).toHaveBeenCalled());
-
           expect(consoleErrorSpy).toHaveBeenCalledWith({ message: "500 error", status: 500 });
 
           updateSpy.mockRestore();
@@ -195,7 +181,8 @@ describe("Given I am connected as an employee", () => {
       // Successful submission test: redirect to bills page
       describe("When the submission is successful", () => {
         test("Then updateBill should navigate to Bills page", async () => {
-          //Spy to check if the function is called, and redeclare newBill with the spy
+
+          //Redeclare newBill with the spy, so that we can check if onNavigate is called
           const onNavigate = jest.fn((pathname) => {
             document.body.innerHTML = ROUTES_PATH[pathname];
           });
@@ -206,14 +193,12 @@ describe("Given I am connected as an employee", () => {
             localStorage: localStorageMock,
           });
 
+          //Get form, have a successful submission, and check if onNavigate is called
           const form = screen.getByTestId("form-new-bill");
-
           const updateSpy = jest.spyOn(newBill.store, "bills").mockImplementation(() => ({
             update: () => Promise.resolve(),
           }));
-
           fireEvent.submit(form);
-
           await waitFor(() => expect(onNavigate).toHaveBeenCalledWith(ROUTES_PATH['Bills']));
 
           updateSpy.mockRestore();
