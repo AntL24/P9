@@ -10,6 +10,8 @@ import mockedStore from "../__mocks__/store.js";
 import { localStorageMock } from "../__mocks__/localStorage.js";
 import "@testing-library/jest-dom/extend-expect";
 
+/////////////////
+//Start of tests
 describe("Given I am connected as an employee", () => {
   //////////////////////////////////////////////
   //Set up for all tests
@@ -108,34 +110,12 @@ describe("Given I am connected as an employee", () => {
       consoleErrorSpy.mockRestore();
     });
 
-    ////////////////////////////////////////////////////////
+    /////////////////////////////////
     //Post new bill integration test
-    describe("Given I am a user connected as Employee, and I post a newBill", () => {
-      test("Add a bill using mock API POST", async () => {
-        const postSpy = jest.spyOn(mockedStore, "bills");
-        const bill = {
-          id: "47qAXb6fIm2zOKkLzMro",
-          vat: "80",
-          fileUrl: "https://firebasestorage.googleapis.com/v0/b/billable-677b6.a…f-1.jpg?alt=media&token=c1640e12-a24b-4b11-ae52-529112e9602a",
-          status: "pending",
-          type: "Hôtel et logement",
-          commentary: "séminaire billed",
-          name: "encore",
-          fileName: "preview-facture-free-201801-pdf-1.jpg",
-          date: "2004-04-04",
-          amount: 400,
-          commentAdmin: "ok",
-          email: "a@a",
-          pct: 20,
-        };
-        const postBill = await mockedStore.bills().update(bill);
-        expect(postSpy).toHaveBeenCalledTimes(1);
-        expect(postBill).toStrictEqual(bill);
-      });
-
+    describe("When I post a newBill", () => {
       //////////////////
       //API error test
-      describe("When an error occurs on API", () => {
+      describe("If an error occurs on API", () => {
         ///////////////////////////////////////////
         ////Test if 404 error is caught and logged
         test("Then a 404 error should be caught and logged", async () => {
@@ -172,6 +152,7 @@ describe("Given I am connected as an employee", () => {
           await waitFor(() => expect(consoleErrorSpy).toHaveBeenCalled());
           expect(consoleErrorSpy).toHaveBeenCalledWith({ message: "500 error", status: 500 });
 
+          //Again, we restore spies
           updateSpy.mockRestore();
           consoleErrorSpy.mockRestore();
         });
@@ -179,8 +160,33 @@ describe("Given I am connected as an employee", () => {
 
       //////////////////////////////////////////////////////
       // Successful submission test: redirect to bills page
-      describe("When the submission is successful", () => {
-        test("Then updateBill should navigate to Bills page", async () => {
+      describe("When i post a new bill", () => {
+        test("Add a bill using mock API POST", async () => {
+          //Spy on bills
+          const postSpy = jest.spyOn(mockedStore, "bills");
+          const bill = {
+            id: "47qAXb6fIm2zOKkLzMro",
+            vat: "80",
+            fileUrl: "https://firebasestorage.googleapis.com/v0/b/billable-677b6.a…f-1.jpg?alt=media&token=c1640e12-a24b-4b11-ae52-529112e9602a",
+            status: "pending",
+            type: "Hôtel et logement",
+            commentary: "séminaire billed",
+            name: "encore",
+            fileName: "preview-facture-free-201801-pdf-1.jpg",
+            date: "2004-04-04",
+            amount: 400,
+            commentAdmin: "ok",
+            email: "a@a",
+            pct: 20,
+          };
+          //
+          //If all goes well, we should get the bill back and postSpy should be called once
+          const postBill = await mockedStore.bills().update(bill);
+          expect(postSpy).toHaveBeenCalledTimes(1);
+          expect(postBill).toStrictEqual(bill);
+        });
+        
+        test("Then updateBill should navigate to Bills page if the submission is successfull", async () => {
 
           //Redeclare newBill with the spy, so that we can check if onNavigate is called
           const onNavigate = jest.fn((pathname) => {
